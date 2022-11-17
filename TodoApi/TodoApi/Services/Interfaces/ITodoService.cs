@@ -1,15 +1,16 @@
 ﻿using TodoApi.DTOs.Requests;
+using TodoApi.DTOs.Responses;
 using TodoApi.Entities;
 
 namespace TodoApi.Services.Interfaces
 {
     public interface ITodoService
     {
-        Task<IEnumerable<Todo>> GetAll();
+        Task<PaginatedResponseDto<TodoDto>> GetAll(PaginatedRequestDto filter);
 
-        Task<Todo> GetById(int id);
+        Task<TodoDto> GetById(int id);
 
-        Task<Todo> Add(CreateTodoDTO todoDto);
+        Task<TodoDto> Add(CreateTodoDto todoDto);
 
         Task Delete(int id);
     }

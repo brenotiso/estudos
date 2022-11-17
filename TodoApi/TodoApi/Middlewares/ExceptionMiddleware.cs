@@ -35,9 +35,9 @@ namespace TodoApi.Middlewares
             }
         }
 
-        private ErrorDTO GetErrorResult(Exception exception)
+        private ErrorDto GetErrorResult(Exception exception)
         {
-            var errorResult = new ErrorDTO()
+            var errorResult = new ErrorDto()
             {
                 Message = exception.Message
             };

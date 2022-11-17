@@ -8,6 +8,7 @@ using TodoApi.Repositories;
 using TodoApi.Repositories.Interfaces;
 using TodoApi.Services;
 using TodoApi.Services.Interfaces;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,12 +20,20 @@ builder.Services.AddDbContextPool<TodoContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("TodoConnection"));
 });
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.ConfigurationOptions = new ConfigurationOptions
+    {
+        EndPoints = { $"{builder.Configuration["urlRedis"]}:{builder.Configuration["portRedis"]}" },
+        Password = builder.Configuration["passRedis"]
+    };
+});
 
 builder.Services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
 
 builder.Services.AddScoped<ITodoService, TodoService>();
 
-builder.Services.AddDistributedMemoryCache();
+//builder.Services.AddDistributedMemoryCache();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddApiVersioning(setupAction =>

@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: todo-api-ingress
+  namespace: todo-api
+  annotations:
+    field.cattle.io/description: Ingressar em todo-api
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  labels:
+    app.kubernetes.io/name: todobreno
+    app.kubernetes.io/version: 'v0.1'
+spec:
+  rules:
+  - host: todo-api
+    http:
+      paths:
+      - backend:
+          service:
+            port:
+              number: 8080
+            name: todo-api-deployment
+        path: /
+        pathType: Prefix

@@ -1,10 +1,12 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
 using TodoApi.DTOs.Requests;
+using TodoApi.DTOs.Responses;
 using TodoApi.Entities;
 using TodoApi.Exceptions;
 using TodoApi.Extensions;
 using TodoApi.Repositories.Interfaces;
 using TodoApi.Services.Interfaces;
+using TodoApi.Specifications;
 
 namespace TodoApi.Services
 {
@@ -19,20 +21,48 @@ namespace TodoApi.Services
             _repository = repository;
         }
 
-        public async Task<IEnumerable<Todo>> GetAll()
+        public async Task<PaginatedResponseDto<TodoDto>> GetAll(PaginatedRequestDto filter)
         {
-            if (_cache.TryGetValue("todos", out IEnumerable<Todo>? todos) && todos is not null)
-                return todos;
+            var spec = new GetPaginatedTodosSpec(filter.PageNumber, filter.PageSize);
+            var todos = await _repository.ListAsync(spec);
+            var count = await _repository.CountAsync();
 
-            todos = await _repository.ListAsync();
-
-            await _cache.SetAsync("todos", todos);
-
-            return todos;
+            return new PaginatedResponseDto<TodoDto>()
+            {
+                Data = todos.Select(t => TodoDto.FromEntity(t)),
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
+                Total = count
+            };
         }
 
-        public async Task<Todo> GetById(int id)
+        public async Task<TodoDto> GetById(int id)
         {
+            var todo = await GetFromDatabaseById(id);
+
+            return TodoDto.FromEntity(todo);
+        }
+
+        public async Task<TodoDto> Add(CreateTodoDto todoDto)
+        {
+            var newTodo = await _repository.AddAsync(new Todo
+            {
+                Description = todoDto.Description
+            });
+
+            return TodoDto.FromEntity(newTodo);
+        }
+
+        public async Task Delete(int id)
+        {
+            var todo = await GetFromDatabaseById(id);
+
+            await _repository.DeleteAsync(todo);
+
+            _cache.Remove($"todo-{id}");
+        }
+
+        private async Task<Todo> GetFromDatabaseById(int id) {
             if (_cache.TryGetValue($"todo-{id}", out Todo? todo) && todo is not null)
                 return todo;
 
@@ -44,28 +74,6 @@ namespace TodoApi.Services
             await _cache.SetAsync($"todo-{id}", todo);
 
             return todo;
-        }
-
-        public async Task<Todo> Add(CreateTodoDTO todoDto)
-        {
-            var newTodo = await _repository.AddAsync(new Todo
-            {
-                Description = todoDto.Description
-            });
-
-            _cache.Remove("todos");
-
-            return newTodo;
-        }
-
-        public async Task Delete(int id)
-        {
-            var todo = await GetById(id);
-
-            await _repository.DeleteAsync(todo);
-
-            _cache.Remove("todos");
-            _cache.Remove($"todo-{id}");
         }
     }
 }
